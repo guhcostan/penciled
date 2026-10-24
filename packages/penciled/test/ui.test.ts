@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import '../src/styles.css';
-import { type AnnotateOptions, annotate } from '../src/index.ts';
+import { type AnnotateOptions, annotate, type Labels } from '../src/index.ts';
 import css from '../src/styles.css?inline';
 import { cleanup, clickOn, find, mount, painted, selectText, track, wait } from './helpers.ts';
 
@@ -148,14 +148,64 @@ describe('toolbar', () => {
   });
 
   test('labels replace every string', async () => {
-    const { root } = await setup({
-      labels: { toolbar: 'Anmerkung', highlight: '{color} markieren', note: 'Notiz' },
+    const labels: Labels = {
+      toolbar: 'Anmerkung',
+      highlight: '{color} markieren',
+      note: 'Notiz hinzufuegen',
+      editNote: 'Notiz bearbeiten',
+      copy: 'Kopieren',
+      copied: 'Kopiert',
+      remove: 'Entfernen',
+      noteField: 'Notiztext',
+      notePlaceholder: 'Notiz eingeben',
+      save: 'Speichern',
+      cancel: 'Abbrechen',
+      position: 'Markierung {index} von {total}: {text}',
+      empty: 'Keine Markierungen',
+    };
+    const { root, instance } = await setup({
+      labels,
       colors: [{ name: 'yellow', label: 'Gelb' }],
+      actions: ['highlight', 'note', 'copy', 'remove'],
     });
+    const live = document.querySelector('[data-penciled-live]')!;
+    press(']', { code: 'BracketRight', altKey: true });
+    await expect.poll(() => live.textContent).toBe('Keine Markierungen');
+
     await selectText(find(root, 'quick'));
     expect(toolbar()?.getAttribute('aria-label')).toBe('Anmerkung');
     expect(action('color-yellow')?.getAttribute('aria-label')).toBe('Gelb markieren');
-    expect(action('note')?.getAttribute('aria-label')).toBe('Notiz');
+    expect(action('note')?.getAttribute('aria-label')).toBe('Notiz hinzufuegen');
+    expect(action('copy')?.getAttribute('aria-label')).toBe('Kopieren');
+
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
+    try {
+      action('copy')!.click();
+      await expect.poll(() => live.textContent).toBe('Kopiert');
+    } finally {
+      writeText.mockRestore();
+    }
+
+    action('note')!.click();
+    expect(field()?.getAttribute('aria-label')).toBe('Notiztext');
+    expect(field()?.placeholder).toBe('Notiz eingeben');
+    expect(popover()?.querySelector('[data-penciled-primary]')?.firstChild?.textContent).toBe(
+      'Speichern',
+    );
+    expect(
+      popover()?.querySelector('[data-penciled-editor] button:not([data-penciled-primary])')
+        ?.textContent,
+    ).toBe('Abbrechen');
+    field()!.value = 'Eine Notiz';
+    press('Enter', { ctrlKey: true });
+
+    instance.create(find(root, 'lazy'));
+    press(']', { code: 'BracketRight', altKey: true });
+    await expect.poll(() => live.textContent).toBe('Markierung 2 von 2: lazy');
+    press('[', { code: 'BracketLeft', altKey: true });
+    await expect.poll(() => live.textContent).toBe('Markierung 1 von 2: quick. Eine Notiz');
+    expect(action('note')?.getAttribute('aria-label')).toBe('Notiz bearbeiten');
+    expect(action('remove')?.getAttribute('aria-label')).toBe('Entfernen');
   });
 });
 

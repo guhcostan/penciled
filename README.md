@@ -31,7 +31,7 @@ Readers can now select text to highlight it, add a note, or click a highlight to
 
 ## Browser extension
 
-Not building a site? [penciled for the browser](https://penciled.org/extension/) lets you highlight and take notes on any website, in Chrome and Edge. It's built on this library and lives in [`apps/extension`](./apps/extension).
+Not building a site? [penciled for the browser](https://penciled.org/extension/) lets you highlight and take notes on any website. Install it for [Chrome](https://chromewebstore.google.com/detail/edpobhdkceoadekhpdagmnknocckaaje), [Firefox](https://addons.mozilla.org/en-US/firefox/addon/penciled-highlighter/) or [Edge](https://microsoftedge.microsoft.com/addons/detail/penciled-%E2%80%93-highlighter-/abhbgdlbgleahgeodcifnpecikbdciml). It's built on this library and lives in [`apps/extension`](./apps/extension).
 
 ## Saving to your backend
 

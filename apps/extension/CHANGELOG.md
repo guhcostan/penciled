@@ -1,6 +1,6 @@
 # penciled for the browser
 
-## Unreleased
+## 0.4.0
 
 - penciled's toolbar button now opens the sidebar. If you'd rather have the menu, choose **This page's highlights** under **The penciled button** in the settings. If you've changed any setting before, the button keeps opening the menu. Browsers without a sidebar always open the menu.
 - The sidebar has an **All notes** button, and an eye that hides or shows highlights on the tab, as Alt+Shift+H does.

@@ -157,7 +157,7 @@ test('turns penciled back on for a site', async ({ context, background, extensio
   await expect.poll(() => painted(page)).toMatchObject({ 'penciled-c2': ['lazy dog'] });
 });
 
-test('the toolbar button opens the sidebar when the settings say so', async ({
+test('the toolbar button opens the sidebar, or the popup when the settings say so', async ({
   context,
   background,
   extension,
@@ -172,14 +172,15 @@ test('the toolbar button opens the sidebar when the settings say so', async ({
       ]);
       return { popup: popup.replace(/^.*\//, ''), sidebar: behavior.openPanelOnActionClick };
     });
-  await expect.poll(button).toEqual({ popup: 'popup.html', sidebar: false });
+  await expect.poll(button).toEqual({ popup: '', sidebar: true });
 
   const settings = await context.newPage();
   await settings.goto(`${extension}/options.html#settings`);
-  await settings.getByRole('radio', { name: 'The sidebar' }).check();
-  await expect.poll(button).toEqual({ popup: '', sidebar: true });
+  await expect(settings.getByRole('radio', { name: 'The sidebar' })).toBeChecked();
   await settings.getByRole('radio', { name: 'This page’s highlights' }).check();
   await expect.poll(button).toEqual({ popup: 'popup.html', sidebar: false });
+  await settings.getByRole('radio', { name: 'The sidebar' }).check();
+  await expect.poll(button).toEqual({ popup: '', sidebar: true });
 });
 
 test('tags highlights on this page, and filters by them', async ({

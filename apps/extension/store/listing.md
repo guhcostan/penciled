@@ -20,7 +20,7 @@ Screenshots are in `screenshots/` (1280×800), and the Chrome Web Store's promo 
 Highlight text and take notes on any website, like reading with a pencil in hand. Your highlights come back every time you return to the page.
 
 • Select text and pick a color to highlight it. Add a note to remember why.
-• Click penciled's toolbar button to see the page's highlights, and jump to any of them.
+• Click penciled's toolbar button to keep your highlights in a sidebar beside the page, and jump to any of them.
 • The notes page lists every highlight from every site, with search.
 • Export your notes as a backup or as Markdown, and import them in another browser.
 • Make it yours: your own colors, a light or dark toolbar, or a toolbar that only opens when you press Alt+A.

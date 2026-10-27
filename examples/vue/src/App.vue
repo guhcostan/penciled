@@ -1,6 +1,6 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
 import { annotate } from 'penciled';
+import { onMounted, onUnmounted, ref } from 'vue';
 import 'penciled/styles.css';
 
 // A template ref is all `annotate()` needs: it takes an element or a selector,

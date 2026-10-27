@@ -6,7 +6,7 @@ import { cleanup, track } from './helpers.ts';
 afterEach(cleanup);
 
 // Budgets are several times what current browsers need, so slow CI machines pass too.
-const BUDGET = 250;
+const BUDGET = 400;
 
 const WORDS = `the of and a to in is was he for it with as his on be at by this had not are but
   from or have an they which one you were her all she there would their we him been has when who

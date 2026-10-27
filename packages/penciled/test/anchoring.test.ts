@@ -265,13 +265,20 @@ describe('performance', () => {
       }),
     );
 
+  /**
+   * Budget for one anchor() call on the text above, in ms. Shared CI runners (WebKit especially)
+   * have been seen just over 200 ms, while a real regression, such as an accidental quadratic,
+   * is many times slower.
+   */
+  const budget = 300;
+
   test('fuzzy-matches a short edited quote quickly', () => {
     const at = text.indexOf('500. ');
     const selector = selectorAt(text, at + 5, at + 40);
     const quote = selector.quote;
     const edited = text.replace(quote, `${quote.slice(0, 10)}xx${quote.slice(12)}`);
     expect(anchor(edited, selector)).toEqual([at + 5, at + 40]);
-    expect(fastest(() => anchor(edited, selector))).toBeLessThan(200);
+    expect(fastest(() => anchor(edited, selector))).toBeLessThan(budget);
   });
 
   test('fuzzy-matches a long edited quote quickly', () => {
@@ -280,13 +287,13 @@ describe('performance', () => {
     const selector = selectorAt(text, start, start + quote.length);
     const edited = text.replace('402. ', '402. inserted ');
     expect(anchor(edited, selector)).toEqual([start, start + quote.length + 9]);
-    expect(fastest(() => anchor(edited, selector))).toBeLessThan(200);
+    expect(fastest(() => anchor(edited, selector))).toBeLessThan(budget);
   });
 
   test('orphans quickly when nothing matches', () => {
     const selector = selectorAt('zzz qqq xyzzy plugh frobnicate', 4, 30);
     expect(anchor(text, selector)).toBeNull();
-    expect(fastest(() => anchor(text, selector))).toBeLessThan(200);
+    expect(fastest(() => anchor(text, selector))).toBeLessThan(budget);
   });
 });
 

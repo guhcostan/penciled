@@ -433,6 +433,18 @@ input[type="search"] {
 .group-head p {
   margin: 0;
 }
+.page-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.page-head p {
+  grid-column: 1;
+}
+.page-head .eye {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  margin-right: -6px;
+}
 .page-head .title,
 .group-head .title {
   overflow: hidden;

@@ -157,7 +157,48 @@ test('turns penciled back on for a site', async ({ context, background, extensio
   await expect.poll(() => painted(page)).toMatchObject({ 'penciled-c2': ['lazy dog'] });
 });
 
-test('the toolbar button opens the sidebar when the settings say so', async ({
+test('hides and shows highlights on this tab, without turning the site off', async ({
+  context,
+  background,
+  extension,
+}) => {
+  const page = await context.newPage();
+  await page.goto(ARTICLE);
+  await expect.poll(() => painted(page)).toMatchObject({ 'penciled-c2': ['lazy dog'] });
+
+  const sidebar = await context.newPage();
+  await sidebar.goto(`${extension}/sidepanel.html?tab=${await tabId(background, page)}`);
+  await sidebar.getByRole('tab', { name: 'This page' }).click();
+  const hide = sidebar.getByRole('button', { name: 'Hide highlights on this tab' });
+  await hide.click();
+  await expect(sidebar.getByText('Highlights are hidden on this tab')).toBeVisible();
+  await expect.poll(() => painted(page)).toEqual({});
+  const show = sidebar.getByRole('button', { name: 'Show highlights on this tab' });
+  await expect(show).toBeFocused();
+  expect((await stored(background))['disabled-sites'] ?? []).toEqual([]);
+
+  await show.click();
+  await expect(sidebar.getByRole('listitem')).toHaveCount(2);
+  await expect.poll(() => painted(page)).toMatchObject({ 'penciled-c2': ['lazy dog'] });
+
+  // From the hidden state's own button too.
+  await hide.click();
+  await sidebar.getByRole('button', { name: 'Show highlights', exact: true }).click();
+  await expect(sidebar.getByRole('listitem')).toHaveCount(2);
+});
+
+test('opens the notes page', async ({ context, extension }) => {
+  const sidebar = await context.newPage();
+  await sidebar.goto(`${extension}/sidepanel.html?tab=999999`);
+  const [notes] = await Promise.all([
+    context.waitForEvent('page'),
+    sidebar.getByRole('button', { name: 'All notes' }).click(),
+  ]);
+  await expect(notes).toHaveURL(`${extension}/options.html#notes`);
+  await expect(notes.getByRole('link', { name: 'Notes' })).toHaveAttribute('aria-current', 'page');
+});
+
+test('the toolbar button opens the sidebar, or the popup when the settings say so', async ({
   context,
   background,
   extension,
@@ -172,14 +213,15 @@ test('the toolbar button opens the sidebar when the settings say so', async ({
       ]);
       return { popup: popup.replace(/^.*\//, ''), sidebar: behavior.openPanelOnActionClick };
     });
-  await expect.poll(button).toEqual({ popup: 'popup.html', sidebar: false });
+  await expect.poll(button).toEqual({ popup: '', sidebar: true });
 
   const settings = await context.newPage();
   await settings.goto(`${extension}/options.html#settings`);
-  await settings.getByRole('radio', { name: 'The sidebar' }).check();
-  await expect.poll(button).toEqual({ popup: '', sidebar: true });
+  await expect(settings.getByRole('radio', { name: 'The sidebar' })).toBeChecked();
   await settings.getByRole('radio', { name: 'This page’s highlights' }).check();
   await expect.poll(button).toEqual({ popup: 'popup.html', sidebar: false });
+  await settings.getByRole('radio', { name: 'The sidebar' }).check();
+  await expect.poll(button).toEqual({ popup: '', sidebar: true });
 });
 
 test('tags highlights on this page, and filters by them', async ({

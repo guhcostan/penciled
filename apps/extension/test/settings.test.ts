@@ -18,6 +18,12 @@ test('settings start from the defaults and keep what was saved', async () => {
   expect(await getSettings()).toEqual({ ...DEFAULTS, theme: 'dark', openOnSelect: false });
 });
 
+test('the toolbar button opens the sidebar, unless the reader saved the popup', async () => {
+  expect((await getSettings()).buttonOpens).toBe('sidebar');
+  await fakeBrowser.storage.sync.set({ settings: { buttonOpens: 'popup' } });
+  expect((await getSettings()).buttonOpens).toBe('popup');
+});
+
 test('changes are reported with what they replaced', async () => {
   const fn = vi.fn();
   onSettings(fn);

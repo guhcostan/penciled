@@ -72,13 +72,22 @@ tablist.onkeydown = (e) => {
   tabs[view].focus();
 };
 
+/** Opens a tab of the extension page, `notes` or `settings`. */
+const openPage = (page: string) =>
+  browser.tabs.create({ url: `${browser.runtime.getURL('/options.html')}#${page}` });
+
+const notes = h(
+  'button',
+  { type: 'button', class: 'icon', 'aria-label': 'All notes', title: 'All notes' },
+  ICONS.notes(),
+);
+notes.onclick = () => openPage('notes');
 const settings = h(
   'button',
   { type: 'button', class: 'icon', 'aria-label': 'Settings', title: 'Settings' },
   ICONS.settings(),
 );
-settings.onclick = () =>
-  browser.tabs.create({ url: `${browser.runtime.getURL('/options.html')}#settings` });
+settings.onclick = () => openPage('settings');
 
 const input = h('input', {
   type: 'search',
@@ -128,7 +137,7 @@ const list = h('div', { class: 'list', role: 'tabpanel' });
 const top = h(
   'div',
   { class: 'top' },
-  h('div', { class: 'bar' }, tablist, settings),
+  h('div', { class: 'bar' }, tablist, notes, settings),
   h('label', { class: 'search' }, ICONS.search(), input),
   filters,
 );
@@ -286,6 +295,25 @@ async function pageView(): Promise<Node[]> {
     ];
   }
   const id = tab;
+  // Hides or shows highlights on this tab only, as the shortcut does.
+  const toggle = async () => {
+    await ask(id, { type: 'toggle' });
+    render();
+  };
+  const action = state.hidden ? 'Show' : 'Hide';
+  const eye =
+    !state.disabled &&
+    h(
+      'button',
+      {
+        type: 'button',
+        class: 'icon eye',
+        'aria-label': `${action} highlights on this tab`,
+        title: `${action} highlights (${toggleKeys})`,
+      },
+      state.hidden ? ICONS.eyeOff() : ICONS.eye(),
+    );
+  if (eye) eye.onclick = toggle;
   const head = h(
     'header',
     { class: 'page-head' },
@@ -293,8 +321,12 @@ async function pageView(): Promise<Node[]> {
     h(
       'p',
       { class: 'meta' },
-      state.disabled ? state.site : `${state.site} · ${plural(state.items.length, 'highlight')}`,
+      // Hidden or off, the page reports no highlights, though they're kept.
+      state.disabled || state.hidden
+        ? state.site
+        : `${state.site} · ${plural(state.items.length, 'highlight')}`,
     ),
+    eye,
   );
 
   if (state.disabled) {
@@ -306,7 +338,12 @@ async function pageView(): Promise<Node[]> {
     return [head, blank(`penciled is off on ${state.site}`, 'Your highlights are kept.', on)];
   }
   if (state.hidden) {
-    return [head, blank('Highlights are hidden on this tab', `Press ${toggleKeys} to show them.`)];
+    const show = h('button', { type: 'button' }, 'Show highlights');
+    show.onclick = toggle;
+    return [
+      head,
+      blank('Highlights are hidden on this tab', `Press ${toggleKeys} to show them.`, show),
+    ];
   }
   if (!state.items.length) {
     return [head, blank('Nothing highlighted yet', 'Select text on the page to highlight it.')];
@@ -415,10 +452,13 @@ async function render(enter = false) {
   const content = await (view === 'page' ? pageView() : allView(pages));
   // A newer render started while this one loaded.
   if (token !== renders) return;
+  // Kept on the eye, which every render replaces, so it can be pressed again.
+  const onEye = document.activeElement?.classList.contains('eye');
   list.replaceChildren(...content);
   showFilters(scope);
   // Updates rebuild the list: focus goes back to where it was.
   if (editing) list.querySelector<HTMLInputElement>('[data-editing] input')?.focus();
+  else if (onEye) list.querySelector<HTMLElement>('.page-head .eye')?.focus();
   else if (refocus) {
     const { id, control } = refocus;
     refocus = undefined;

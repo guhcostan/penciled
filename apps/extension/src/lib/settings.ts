@@ -32,7 +32,7 @@ export const MAX_COLORS = 8;
 export const DEFAULTS: Settings = {
   theme: 'auto',
   openOnSelect: true,
-  buttonOpens: 'popup',
+  buttonOpens: 'sidebar',
   colors: [
     { id: 'c1', label: 'Yellow', value: '#fde047' },
     { id: 'c2', label: 'Green', value: '#86efac' },

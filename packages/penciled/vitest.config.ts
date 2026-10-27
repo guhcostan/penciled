@@ -11,6 +11,9 @@ export default defineConfig({
           name: 'browser',
           include: ['test/**/*.test.ts'],
           exclude: ['test/**/*.node.test.ts'],
+          // Some UI updates wait for an animation frame, which a busy CI browser can hold back
+          // for over a second. A longer timeout only slows down tests that are about to fail.
+          expect: { poll: { timeout: 3000 } },
           browser: {
             enabled: true,
             headless: true,

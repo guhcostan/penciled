@@ -1,14 +1,22 @@
 # penciled: Vue 3 example
 
 The same three lines as the vanilla example, wired into a Vue 3 component.
-[Open it on StackBlitz](https://stackblitz.com/github/marcellosso/penciled/tree/main/examples/vue?file=src/App.vue), or run it locally:
+[Open it on StackBlitz](https://stackblitz.com/github/marcellosso/penciled/tree/main/examples/vue?file=src/App.vue),
+or run it locally with Node 22.12+ or 24+:
 
 ```sh
 npm install
 npm run dev
 ```
 
-It installs `penciled` from npm, not from this repository.
+It installs `penciled` from npm, not from this repository. Use a browser with the CSS Custom Highlight
+API, such as a current Chrome, Firefox or Safari.
+
+To check the production build:
+
+```sh
+npm run build
+```
 
 ## What the example shows
 

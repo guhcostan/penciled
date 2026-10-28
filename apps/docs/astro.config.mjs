@@ -135,6 +135,7 @@ export default defineConfig({
           items: [
             { label: 'React', slug: 'recipes/react' },
             { label: 'Custom storage (REST API)', slug: 'recipes/rest-storage' },
+            { label: 'Custom storage (Supabase)', slug: 'recipes/supabase-storage' },
             { label: '“Ask AI” action', slug: 'recipes/ask-ai' },
             { label: 'Read-only publisher annotations', slug: 'recipes/read-only' },
             { label: 'Export, import and W3C', slug: 'recipes/export-import' },

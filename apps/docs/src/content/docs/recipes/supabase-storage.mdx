@@ -1,0 +1,120 @@
+---
+title: Custom storage (Supabase)
+metaTitle: 'Save highlights and notes to Supabase'
+description: 'Save text highlights and annotations to Supabase with a penciled storage adapter: load, create, update and delete, with row-level security per signed-in user.'
+---
+
+By default annotations live in the reader's `localStorage`. To store them per signed-in user on Supabase, pass a storage adapter built on `@supabase/supabase-js`. The table below keeps one row per annotation, and row-level security keeps each user's rows private.
+
+## The table
+
+Run this in the Supabase SQL editor. `user_id` defaults to the signed-in user's id, so the adapter never has to send it:
+
+```sql
+create table annotations (
+  id          text primary key,
+  user_id     uuid not null default auth.uid(),
+  document_id text not null,
+  data        jsonb not null,
+  updated_at  timestamptz not null default now()
+);
+
+alter table annotations enable row level security;
+
+create policy "Users read their own annotations"
+  on annotations for select
+  using (auth.uid() = user_id);
+
+create policy "Users insert their own annotations"
+  on annotations for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users update their own annotations"
+  on annotations for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users delete their own annotations"
+  on annotations for delete
+  using (auth.uid() = user_id);
+```
+
+`data` holds the whole [`Annotation`](/reference/types/#annotation), which is flat on purpose and serialises cleanly to JSON.
+
+## The adapter
+
+penciled uses granular methods when they're present, so each change becomes one request instead of rewriting the whole document:
+
+```ts
+import { createClient } from '@supabase/supabase-js';
+import { annotate, type Annotation, type AnnotationStorage } from 'penciled';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const storage: AnnotationStorage = {
+  async load(documentId) {
+    const { data, error } = await supabase
+      .from('annotations')
+      .select('data')
+      .eq('document_id', documentId);
+    if (error) throw error;
+    return (data ?? []).map((row) => row.data as Annotation);
+  },
+  async create(documentId, annotation) {
+    const { error } = await supabase
+      .from('annotations')
+      .insert({ id: annotation.id, document_id: documentId, data: annotation });
+    if (error) throw error;
+  },
+  async update(documentId, annotation) {
+    const { error } = await supabase
+      .from('annotations')
+      .update({ data: annotation, updated_at: new Date().toISOString() })
+      .eq('id', annotation.id);
+    if (error) throw error;
+  },
+  async delete(documentId, id) {
+    const { error } = await supabase
+      .from('annotations')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  },
+  // Still required, but only called for changes without a granular method.
+  async save() {},
+};
+
+annotate('#article', { documentId: 'post-42', storage });
+```
+
+`user_id` is left out of the insert: the column's default fills it from `auth.uid()`, and the RLS policy checks it. Don't send the user id from the client.
+
+Changes made within [`saveDelay`](/reference/options/#savedelay) (300 ms by default) are combined per annotation: highlighting a passage and then picking another color sends one insert, and highlighting and then removing it sends nothing.
+
+## Errors and offline
+
+Saving is optimistic: a change appears immediately and is saved in the background. If a request fails, the error goes to `onError`, and the change stays on screen. penciled doesn't retry, so tell the reader:
+
+```ts
+annotate('#article', {
+  storage,
+  onError: () => showToast('Your highlights couldn’t be saved. Check your connection.'),
+});
+```
+
+If `load` fails, the error goes to `onError`, the instance starts empty and `ready` still resolves. The reader can keep highlighting, but nothing is saved for the rest of that instance's life: `save` replaces the whole document, so saving after a failed load could erase annotations that are still on the server. Create a new instance (for example after the reader reloads or retries) to load and save again.
+
+## Switching users or documents
+
+The document id is fixed for the life of an instance, and the Supabase client is tied to the signed-in user. When the signed-in user or the content changes, destroy the instance and create a new one:
+
+```ts
+let penciled = annotate('#article', { documentId: doc.id, storage });
+
+function onNavigate(next) {
+  penciled.destroy(); // saves pending changes first
+  penciled = annotate('#article', { documentId: next.id, storage });
+}
+```
+
+If the signed-in user changes, recreate the Supabase client (or call `supabase.auth.setSession`) before creating the new instance, so the RLS policies apply to the new user.
